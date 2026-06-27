@@ -1,0 +1,114 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+@import "aos/dist/aos.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-glow: var(--primary-glow);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --font-display: "Cormorant Garamond", serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+:root {
+  --radius: 0.85rem;
+  /* Refined blush + rose palette */
+  --background: oklch(0.985 0.008 20);
+  --foreground: oklch(0.22 0.04 350);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.04 350);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.04 350);
+  --primary: oklch(0.52 0.13 5);
+  --primary-foreground: oklch(0.99 0.005 20);
+  --primary-glow: oklch(0.72 0.11 10);
+  --secondary: oklch(0.955 0.018 15);
+  --secondary-foreground: oklch(0.28 0.06 350);
+  --muted: oklch(0.965 0.012 15);
+  --muted-foreground: oklch(0.5 0.03 350);
+  --accent: oklch(0.94 0.03 10);
+  --accent-foreground: oklch(0.28 0.06 350);
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.91 0.018 15);
+  --input: oklch(0.93 0.018 15);
+  --ring: oklch(0.62 0.11 10);
+  --gold: oklch(0.74 0.11 65);
+
+  --gradient-hero: linear-gradient(135deg, oklch(0.78 0.09 15) 0%, oklch(0.62 0.13 8) 55%, oklch(0.48 0.12 350) 100%);
+  --gradient-soft: linear-gradient(180deg, oklch(0.985 0.008 20) 0%, oklch(0.95 0.025 15) 100%);
+  --gradient-card: linear-gradient(145deg, oklch(1 0 0) 0%, oklch(0.975 0.012 15) 100%);
+  --shadow-elegant: 0 24px 60px -24px oklch(0.52 0.13 5 / 0.22);
+  --shadow-glow: 0 0 60px oklch(0.72 0.11 10 / 0.35);
+  --shadow-soft: 0 8px 28px -12px oklch(0.52 0.13 5 / 0.14);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+}
+
+@utility gradient-hero { background: var(--gradient-hero); }
+@utility gradient-soft { background: var(--gradient-soft); }
+@utility gradient-card { background: var(--gradient-card); }
+@utility text-gradient {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@utility shadow-elegant { box-shadow: var(--shadow-elegant); }
+@utility shadow-glow { box-shadow: var(--shadow-glow); }
+@utility shadow-soft { box-shadow: var(--shadow-soft); }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-20px) rotate(3deg); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes blob {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+}
+
+@utility animate-float { animation: float 6s ease-in-out infinite; }
+@utility animate-blob { animation: blob 8s ease-in-out infinite; }
+@utility animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
