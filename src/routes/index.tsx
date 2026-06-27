@@ -119,6 +119,7 @@ const education = [
 function Portfolio() {
   useEffect(() => {
     AOS.init({ duration: 900, once: true, easing: "ease-out-cubic", offset: 80 });
+    AOS.refresh();
   }, []);
 
   return (
@@ -144,7 +145,7 @@ function Nav() {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
   const links = [
@@ -827,6 +828,10 @@ function BlogSection() {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!loading) AOS.refresh();
+  }, [loading]);
 
   if (loading) {
     return (
