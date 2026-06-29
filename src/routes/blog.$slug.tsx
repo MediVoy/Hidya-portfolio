@@ -1,19 +1,10 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Calendar, User, Clock, Share2, BookOpen, ChevronRight } from "lucide-react";
 import { getBlog, normalizeDriveImageUrl, type BlogPost } from "@/lib/api";
 
 export const Route = createFileRoute("/blog/$slug")({
-  loader: async ({ params }) => {
-    const post = await getBlog("hidya", params.slug);
-    if (!post || (post.Status && post.Status !== "Published")) {
-      throw notFound();
-    }
-    return { post };
-  },
-  pendingComponent: BlogPostSkeleton,
   component: BlogPostPage,
-  notFoundComponent: BlogNotFound,
 });
 
 function formatDate(d: string) {
@@ -337,16 +328,62 @@ function renderTaggedContent(content: string): string {
 
 function BlogPostSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-12 animate-pulse">
-      <div className="h-3 w-20 rounded bg-white/10 mb-8" />
-      <div className="h-12 w-3/4 rounded-xl bg-white/10 mb-4" />
-      <div className="h-8 w-1/2 rounded-xl bg-white/10 mb-4" />
-      <div className="h-5 w-64 rounded bg-white/10 mb-10" />
-      <div className="h-72 rounded-3xl bg-white/10 mb-10" />
-      <div className="space-y-3">
-        {[100, 95, 90, 100, 85, 60].map((w, i) => (
-          <div key={i} className="h-4 rounded bg-white/10" style={{ width: `${w}%` }} />
-        ))}
+    <div className="relative min-h-screen animate-pulse">
+      <div className="fixed -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-[var(--teal-glow)] opacity-[0.04] blur-[160px] pointer-events-none" />
+
+      <div className="sticky top-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2">
+            <div className="h-4 w-4 rounded bg-white/10" />
+            <div className="h-4 w-20 rounded bg-white/10" />
+          </div>
+          <div className="h-8 w-20 rounded-full bg-white/10" />
+        </div>
+      </div>
+
+      <header className="relative pt-12 pb-8 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="h-3 w-20 rounded bg-white/10 mb-6" />
+          <div className="h-12 sm:h-16 w-3/4 rounded-xl bg-white/10 mb-4" />
+          <div className="h-8 w-1/2 rounded-xl bg-white/10 mb-8" />
+          <div className="flex flex-wrap items-center gap-4 pb-8 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-white/10" />
+              <div className="h-4 w-24 rounded bg-white/10" />
+            </div>
+            <span className="h-1 w-1 rounded-full bg-white/10" />
+            <div className="h-4 w-32 rounded bg-white/10" />
+            <span className="h-1 w-1 rounded-full bg-white/10" />
+            <div className="h-4 w-24 rounded bg-white/10" />
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-10">
+        <div className="h-64 sm:h-96 rounded-3xl bg-white/10" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
+        <div className="grid lg:grid-cols-[1fr_240px] gap-12 items-start">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              {[100, 95, 90, 100, 85, 60].map((w, i) => (
+                <div key={i} className="h-4 rounded bg-white/10" style={{ width: `${w}%` }} />
+              ))}
+            </div>
+            <div className="h-4 w-3/4 rounded bg-white/10" />
+            <div className="h-4 w-full rounded bg-white/10" />
+            <div className="h-4 w-5/6 rounded bg-white/10" />
+          </div>
+
+          <aside className="hidden lg:block">
+            <div className="sticky top-24 space-y-6">
+              <div className="p-5 rounded-2xl glass border border-border/40 h-24 bg-white/5" />
+              <div className="p-5 rounded-2xl glass border border-border/40 h-48 bg-white/5" />
+              <div className="h-4 w-24 rounded bg-white/10" />
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
@@ -417,27 +454,65 @@ function BlogNotFound() {
 }
 
 function BlogPostPage() {
-  const { post } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
-  const readTime =
-    post["Read Time"] ?? (post.Content ? estimateReadTime(post.Content) : "5 min read");
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setFailed(false);
+    setPost(null);
 
-  const tags = post.Tags
+    (async () => {
+      try {
+        const result = await getBlog("hidya", slug);
+        if (!active) return;
+        if (!result || (result.Status && result.Status !== "Published")) {
+          setFailed(true);
+        } else {
+          setPost(result);
+        }
+      } catch (err) {
+        console.error("Failed to load blog post:", err);
+        if (active) setFailed(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [slug]);
+
+  useEffect(() => {
+    if (post) window.scrollTo({ top: 0, behavior: "auto" });
+  }, [post]);
+
+  const readTime = post
+    ? (post["Read Time"] ?? (post.Content ? estimateReadTime(post.Content) : "5 min read"))
+    : "";
+
+  const tags = post?.Tags
     ? post.Tags.split(",")
-        .map((t) => t.trim())
+        .map((t: string) => t.trim())
         .filter(Boolean)
     : [];
 
-  const coverImageUrl = useMemo(() => normalizeDriveImageUrl(post["Cover Image URL"]), [post]);
+  const coverImageUrl = useMemo(
+    () => (post ? normalizeDriveImageUrl(post["Cover Image URL"]) : ""),
+    [post],
+  );
 
   const renderedContent = useMemo(() => {
-    if (!post.Content) return "";
+    if (!post?.Content) return "";
     return renderMarkdown(String(post.Content));
-  }, [post.Content]);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "auto" });
   }, [post]);
+
+  if (loading) return <BlogPostSkeleton />;
+  if (failed || !post) return <BlogNotFound />;
 
   return (
     <article className="relative min-h-screen">
