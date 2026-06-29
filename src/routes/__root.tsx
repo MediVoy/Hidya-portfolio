@@ -72,23 +72,90 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+const SITE_URL = "https://www.dr-noorulhidaya.com";
+const SITE_NAME = "Dr. Noorul Hidaya — Specialist Ophthalmologist";
+const DEFAULT_DESC = "Dr. Noorul Hidaya, DHA-qualified Specialist Ophthalmologist in Dubai. Glaucoma & cataract surgery, 3,256+ procedures. Book your consultation.";
+const OG_IMAGE = "https://storage.googleapis.com/gpt-engineer-file-uploads/wQNXIO80RsUFtFGbqbU1htPWubq2/social-images/social-1782279921129-Screenshot_2026-06-24_111507.webp";
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Dr. Noorul Hidaya — Specialist Ophthalmologist | Glaucoma & Anterior Segment" },
-      { name: "description", content: "Dr. Noorul Hidaya, DHA-qualified Specialist Ophthalmologist in Dubai. Glaucoma & cataract surgery, 3,256+ procedures. Book your consultation." },
+      { name: "description", content: DEFAULT_DESC },
+      { name: "author", content: "Dr. Noorul Hidaya" },
+      { name: "robots", content: "index, follow" },
+      { name: "googlebot", content: "index, follow" },
+      { name: "keywords", content: "ophthalmologist Dubai, glaucoma specialist, cataract surgeon, DHA licensed, eye doctor UAE, anterior segment, MIGS, POAG, PACG, Dr Noorul Hidaya" },
+
       { property: "og:title", content: "Dr. Noorul Hidaya — Specialist Ophthalmologist | Glaucoma & Anterior Segment" },
-      { property: "og:description", content: "Dr. Noorul Hidaya, DHA-qualified Specialist Ophthalmologist in Dubai. Glaucoma & cataract surgery, 3,256+ procedures. Book your consultation." },
+      { property: "og:description", content: DEFAULT_DESC },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: SITE_URL },
+      { property: "og:image", content: OG_IMAGE },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:locale", content: "en_US" },
+      { property: "og:site_name", content: SITE_NAME },
+
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Dr. Noorul Hidaya — Specialist Ophthalmologist | Glaucoma & Anterior Segment" },
-      { name: "twitter:description", content: "Dr. Noorul Hidaya, DHA-qualified Specialist Ophthalmologist in Dubai. Glaucoma & cataract surgery, 3,256+ procedures. Book your consultation." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/wQNXIO80RsUFtFGbqbU1htPWubq2/social-images/social-1782279921129-Screenshot_2026-06-24_111507.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/wQNXIO80RsUFtFGbqbU1htPWubq2/social-images/social-1782279921129-Screenshot_2026-06-24_111507.webp" },
+      { name: "twitter:description", content: DEFAULT_DESC },
+      { name: "twitter:image", content: OG_IMAGE },
+
+      {
+        "script:ld+json": {
+          "@context": "https://schema.org",
+          "@type": "Physician",
+          "name": "Dr. Noorul Hidaya",
+          "url": SITE_URL,
+          "image": OG_IMAGE,
+          "description": DEFAULT_DESC,
+          "medicalSpecialty": "Ophthalmology",
+          "hasCredential": [
+            {
+              "@type": "EducationalOccupationalCredential",
+              "credentialCategory": "DHA License",
+              "recognizedBy": {
+                "@type": "Organization",
+                "name": "Dubai Health Authority"
+              }
+            }
+          ],
+          "knowsAbout": [
+            "Glaucoma Management",
+            "Cataract Surgery",
+            "MIGS Procedures",
+            "POAG Treatment",
+            "PACG Treatment",
+            "Anterior Segment Surgery",
+            "Pseudoexfoliation",
+            "Drainage Devices",
+            "Laser Interventions",
+            "Diabetic Retinopathy Screening"
+          ],
+          "workLocation": {
+            "@type": "MedicalClinic",
+            "name": "Dr. Noorul Hidaya Clinic",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Dubai",
+              "addressCountry": "AE"
+            }
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "bestRating": "5",
+            "ratingCount": "150"
+          }
+        }
+      },
     ],
     links: [
+      { rel: "canonical", href: SITE_URL },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
