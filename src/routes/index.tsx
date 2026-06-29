@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent, type InputHTMLAttributes } from "react";
 import AOS from "aos";
 import { TypeAnimation } from "react-type-animation";
 import hidayaAsset from "@/assets/hidaya-doctor.jpg";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { format } from "date-fns";
-import { apiGet, APPSCRIPT_URL } from "../lib/api";
+import { apiGet, APPSCRIPT_URL, normalizeBlogPost, slugify } from "../lib/api";
 import {
   Eye,
   Microscope,
@@ -31,6 +31,8 @@ import {
 export const Route = createFileRoute("/")({
   component: Portfolio,
 });
+
+type BlogPost = Record<string, unknown>;
 
 const stats = [
   { value: "3,256+", label: "Procedures Performed" },
@@ -116,6 +118,60 @@ const education = [
   { degree: "MBBS", school: "Madurai Medical College", year: "2011" },
 ];
 
+const testimonials = [
+  {
+    name: "Aisha M.",
+    role: "Glaucoma Patient · Dubai",
+    rating: 5,
+    text: "Dr. Hidaya explained my condition with so much patience. The laser procedure was painless and my vision has been stable for over a year now. Truly grateful.",
+  },
+  {
+    name: "Rajesh K.",
+    role: "Cataract Surgery · Madurai",
+    rating: 5,
+    text: "I could read again the day after surgery. Her precision and the team's care were world-class. I recommend her to every family member.",
+  },
+  {
+    name: "Fatima A.",
+    role: "Routine Consultation",
+    rating: 5,
+    text: "Calm, thorough, and incredibly knowledgeable. She took the time to answer every question. A rare and trusted doctor.",
+  },
+  {
+    name: "Mohammed S.",
+    role: "Combined Trabeculectomy",
+    rating: 5,
+    text: "A life-changing surgery handled with absolute mastery. Follow-ups were detailed and reassuring. Forever thankful.",
+  },
+];
+
+const faqs = [
+  {
+    q: "What conditions does Dr. Hidaya treat?",
+    a: "Dr. Hidaya specializes in glaucoma (POAG, PACG, pseudoexfoliation), cataract, anterior-segment disorders, and provides comprehensive ophthalmology consultations.",
+  },
+  {
+    q: "How do I book an appointment?",
+    a: "Use the booking form below to request your preferred date and time. Our team will contact you within 24 hours to confirm.",
+  },
+  {
+    q: "Do you offer second-opinion consultations for glaucoma?",
+    a: "Yes. Bring your previous reports — OCT, visual fields, IOP readings, and medication list — and we'll do a thorough re-evaluation.",
+  },
+  {
+    q: "Which surgical procedures do you perform?",
+    a: "Phacoemulsification with PCIOL, manual SICS, trabeculectomy (standalone & combined), MIGS, glaucoma drainage devices, YAG laser iridotomy, and Nd:YAG capsulotomy.",
+  },
+  {
+    q: "Where is the clinic located?",
+    a: "Consultations are based in Dubai, UAE. Detailed clinic address is shared on appointment confirmation.",
+  },
+  {
+    q: "Are post-operative follow-ups included?",
+    a: "Yes. A structured follow-up schedule is part of every surgical plan to ensure optimal healing and visual outcomes.",
+  },
+];
+
 function Portfolio() {
   useEffect(() => {
     AOS.init({ duration: 900, once: true, easing: "ease-out-cubic", offset: 80 });
@@ -143,11 +199,13 @@ function Portfolio() {
 
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
   const links = [
     ["About", "#about"],
     ["Services", "#services"],
@@ -157,14 +215,18 @@ function Nav() {
     ["FAQ", "#faq"],
     ["Book", "#book"],
   ] as const;
+
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "bg-background/85 backdrop-blur-xl shadow-soft py-3" : "py-5"}`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        scrolled ? "bg-background/85 backdrop-blur-xl shadow-soft py-3" : "py-5"
+      }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         <a href="#top" className="font-display text-xl md:text-2xl font-semibold tracking-tight">
           Dr. Hidaya<span className="text-gradient">.</span>
         </a>
+
         <div className="hidden md:flex items-center gap-8 text-sm">
           {links.map(([label, href]) =>
             href.startsWith("/") ? (
@@ -186,6 +248,7 @@ function Nav() {
             ),
           )}
         </div>
+
         <a
           href="#book"
           className="hidden md:inline-flex items-center gap-2 gradient-hero text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium shadow-soft hover:shadow-glow transition-all hover:-translate-y-0.5"
@@ -200,7 +263,6 @@ function Nav() {
 function Hero() {
   return (
     <section id="top" className="relative min-h-screen flex items-center pt-28 pb-16 px-6">
-      {/* decorative blobs */}
       <div className="absolute top-20 -left-20 w-96 h-96 gradient-hero opacity-20 animate-blob blur-3xl" />
       <div
         className="absolute bottom-10 right-0 w-[28rem] h-[28rem] bg-gold/30 animate-blob blur-3xl"
@@ -213,10 +275,12 @@ function Hero() {
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             DHA Qualified · UAE Golden Visa
           </span>
+
           <h1 className="text-5xl md:text-7xl font-semibold leading-[1.05] mb-6">
             Dr. Noorul <br />
             <span className="text-gradient">Hidaya</span>
           </h1>
+
           <div className="text-xl md:text-2xl text-muted-foreground mb-8 h-16 font-display italic">
             <TypeAnimation
               sequence={[
@@ -235,11 +299,13 @@ function Hero() {
               cursor
             />
           </div>
+
           <p className="text-base md:text-lg text-muted-foreground/90 leading-relaxed max-w-xl mb-10">
             12+ years of progressive clinical experience with advanced fellowship training at the
             globally recognized Aravind Eye Care System. Restoring vision with precision, compassion
             and master-level surgical craft.
           </p>
+
           <div className="flex flex-wrap gap-4">
             <a
               href="#book"
@@ -268,7 +334,6 @@ function Hero() {
               alt="Dr. Noorul Hidaya, Specialist Ophthalmologist"
               className="relative w-[20rem] md:w-[26rem] aspect-square object-cover rounded-[40%_60%_60%_40%/50%_50%_50%_50%] shadow-elegant animate-float"
             />
-            {/* floating chips */}
             <div
               className="absolute -top-4 -left-8 bg-card/95 backdrop-blur px-4 py-2.5 rounded-2xl shadow-elegant text-sm font-medium animate-float flex items-center gap-2"
               style={{ animationDelay: "0.5s" }}
@@ -321,6 +386,7 @@ function About() {
     "OCT & UBM",
     "Diode CPC",
   ];
+
   return (
     <section id="about" className="py-24 px-6">
       <div className="max-w-6xl mx-auto">
@@ -330,6 +396,7 @@ function About() {
             A practice rooted in <span className="text-gradient">precision & care</span>
           </h2>
         </div>
+
         <div className="grid md:grid-cols-2 gap-12 items-start">
           <div
             data-aos="fade-up"
@@ -353,6 +420,7 @@ function About() {
               peer-reviewed publications, DHA Prometric qualification and a UAE Golden Visa.
             </p>
           </div>
+
           <div data-aos="fade-up" data-aos-delay="150" className="grid grid-cols-2 gap-3">
             {skills.map((s, i) => (
               <div
@@ -385,6 +453,7 @@ function Services() {
             Clinical <span className="text-gradient">expertise</span>
           </h2>
         </div>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((s, i) => {
             const Icon = s.icon;
@@ -420,13 +489,16 @@ function Experience() {
             Professional <span className="text-gradient">experience</span>
           </h2>
         </div>
+
         <div className="relative">
           <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px gradient-hero md:-translate-x-px" />
           {experience.map((e, i) => (
             <div
               key={e.role}
               data-aos={i % 2 === 0 ? "fade-right" : "fade-left"}
-              className={`relative mb-10 md:mb-12 md:w-1/2 ${i % 2 === 0 ? "md:pr-12" : "md:ml-auto md:pl-12"}`}
+              className={`relative mb-10 md:mb-12 md:w-1/2 ${
+                i % 2 === 0 ? "md:pr-12" : "md:ml-auto md:pl-12"
+              }`}
             >
               <div
                 className="absolute left-4 md:left-auto md:right-auto top-6 w-4 h-4 rounded-full gradient-hero shadow-glow -translate-x-1/2 md:translate-x-0 md:-right-2 md:[&]:left-auto"
@@ -458,6 +530,7 @@ function EducationSection() {
             Education & <span className="text-gradient">credentials</span>
           </h2>
         </div>
+
         <div className="grid md:grid-cols-2 gap-6">
           {education.map((e, i) => (
             <div
@@ -488,13 +561,16 @@ function Booking() {
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
+
     const data = Object.fromEntries(new FormData(e.currentTarget));
+
     const list = JSON.parse(localStorage.getItem("appointments") || "[]");
     list.push({ ...data, createdAt: new Date().toISOString() });
     localStorage.setItem("appointments", JSON.stringify(list));
+
     try {
       await fetch(APPSCRIPT_URL, {
         method: "POST",
@@ -503,12 +579,15 @@ function Booking() {
         body: JSON.stringify({ ...data, project: "hidya", action: "create" }),
       });
     } catch {
-      // no-cors mode means response is opaque; submission still went through
+      //
     }
+
     await new Promise((r) => setTimeout(r, 700));
+
     toast.success("Appointment requested!", {
       description: "Dr. Hidaya's team will contact you to confirm.",
     });
+
     formRef.current?.reset();
     setSubmitting(false);
   };
@@ -527,6 +606,7 @@ function Booking() {
             Reserve a personalized eye-care consultation. Our team will reach out shortly to confirm
             your appointment time.
           </p>
+
           <div className="space-y-4 text-sm">
             <div className="flex items-center gap-4 p-4 rounded-2xl gradient-card border border-border/50 shadow-soft">
               <div className="w-11 h-11 rounded-xl gradient-hero flex items-center justify-center shadow-soft">
@@ -537,6 +617,7 @@ function Booking() {
                 <div className="text-muted-foreground">+971 50 388 0103</div>
               </div>
             </div>
+
             <div className="flex items-center gap-4 p-4 rounded-2xl gradient-card border border-border/50 shadow-soft">
               <div className="w-11 h-11 rounded-xl gradient-hero flex items-center justify-center shadow-soft">
                 <Mail className="w-5 h-5 text-primary-foreground" strokeWidth={1.8} />
@@ -546,6 +627,7 @@ function Booking() {
                 <div className="text-muted-foreground">drhidaya87@gmail.com</div>
               </div>
             </div>
+
             <div className="flex items-center gap-4 p-4 rounded-2xl gradient-card border border-border/50 shadow-soft">
               <div className="w-11 h-11 rounded-xl gradient-hero flex items-center justify-center shadow-soft">
                 <MapPin className="w-5 h-5 text-primary-foreground" strokeWidth={1.8} />
@@ -568,7 +650,9 @@ function Booking() {
             <Field label="Full Name" name="name" required placeholder="Jane Doe" />
             <Field label="Phone" name="phone" type="tel" required placeholder="+971 ..." />
           </div>
+
           <Field label="Email" name="email" type="email" required placeholder="you@email.com" />
+
           <div className="grid md:grid-cols-2 gap-5">
             <Field label="Preferred Date" name="date" type="date" required min={today} />
             <div className="space-y-2">
@@ -596,6 +680,7 @@ function Booking() {
               </select>
             </div>
           </div>
+
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
               Service
@@ -612,6 +697,7 @@ function Booking() {
               <option>General Consultation</option>
             </select>
           </div>
+
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
               Message (optional)
@@ -623,6 +709,7 @@ function Booking() {
               className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all resize-none"
             />
           </div>
+
           <button
             type="submit"
             disabled={submitting}
@@ -647,7 +734,7 @@ function Field({
   name,
   type = "text",
   ...rest
-}: { label: string; name: string; type?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+}: { label: string; name: string; type?: string } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="space-y-2">
       <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
@@ -663,33 +750,6 @@ function Field({
   );
 }
 
-const testimonials = [
-  {
-    name: "Aisha M.",
-    role: "Glaucoma Patient · Dubai",
-    rating: 5,
-    text: "Dr. Hidaya explained my condition with so much patience. The laser procedure was painless and my vision has been stable for over a year now. Truly grateful.",
-  },
-  {
-    name: "Rajesh K.",
-    role: "Cataract Surgery · Madurai",
-    rating: 5,
-    text: "I could read again the day after surgery. Her precision and the team's care were world-class. I recommend her to every family member.",
-  },
-  {
-    name: "Fatima A.",
-    role: "Routine Consultation",
-    rating: 5,
-    text: "Calm, thorough, and incredibly knowledgeable. She took the time to answer every question. A rare and trusted doctor.",
-  },
-  {
-    name: "Mohammed S.",
-    role: "Combined Trabeculectomy",
-    rating: 5,
-    text: "A life-changing surgery handled with absolute mastery. Follow-ups were detailed and reassuring. Forever thankful.",
-  },
-];
-
 function Testimonials() {
   return (
     <section id="testimonials" className="py-24 px-6">
@@ -700,6 +760,7 @@ function Testimonials() {
             What patients <span className="text-gradient">say</span>
           </h2>
         </div>
+
         <div className="grid md:grid-cols-2 gap-6">
           {testimonials.map((t, i) => (
             <div
@@ -736,35 +797,9 @@ function Testimonials() {
   );
 }
 
-const faqs = [
-  {
-    q: "What conditions does Dr. Hidaya treat?",
-    a: "Dr. Hidaya specializes in glaucoma (POAG, PACG, pseudoexfoliation), cataract, anterior-segment disorders, and provides comprehensive ophthalmology consultations.",
-  },
-  {
-    q: "How do I book an appointment?",
-    a: "Use the booking form below to request your preferred date and time. Our team will contact you within 24 hours to confirm.",
-  },
-  {
-    q: "Do you offer second-opinion consultations for glaucoma?",
-    a: "Yes. Bring your previous reports — OCT, visual fields, IOP readings, and medication list — and we'll do a thorough re-evaluation.",
-  },
-  {
-    q: "Which surgical procedures do you perform?",
-    a: "Phacoemulsification with PCIOL, manual SICS, trabeculectomy (standalone & combined), MIGS, glaucoma drainage devices, YAG laser iridotomy, and Nd:YAG capsulotomy.",
-  },
-  {
-    q: "Where is the clinic located?",
-    a: "Consultations are based in Dubai, UAE. Detailed clinic address is shared on appointment confirmation.",
-  },
-  {
-    q: "Are post-operative follow-ups included?",
-    a: "Yes. A structured follow-up schedule is part of every surgical plan to ensure optimal healing and visual outcomes.",
-  },
-];
-
 function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
+
   return (
     <section
       id="faq"
@@ -777,6 +812,7 @@ function FAQ() {
             Frequently asked <span className="text-gradient">questions</span>
           </h2>
         </div>
+
         <div className="space-y-3">
           {faqs.map((f, i) => {
             const isOpen = open === i;
@@ -794,10 +830,13 @@ function FAQ() {
                 >
                   <span className="font-medium text-foreground">{f.q}</span>
                   <Plus
-                    className={`w-5 h-5 text-primary transition-transform duration-300 ${isOpen ? "rotate-45" : ""}`}
+                    className={`w-5 h-5 text-primary transition-transform duration-300 ${
+                      isOpen ? "rotate-45" : ""
+                    }`}
                     strokeWidth={2.2}
                   />
                 </button>
+
                 <div
                   className="grid transition-all duration-500 ease-out"
                   style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
@@ -816,17 +855,41 @@ function FAQ() {
 }
 
 function BlogSection() {
-  const [posts, setPosts] = useState<Record<string, unknown>[]>([]);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
-        const json = await apiGet("?action=getBlogs&project=hidya&status=Published");
-        if (json.success) setPosts(json.blogs.slice(0, 3));
-      } catch {}
-      setLoading(false);
+        const json = await apiGet("?action=getBlogs");
+        const all = Array.isArray(json.blogs) ? json.blogs.map(normalizeBlogPost) : [];
+
+        const filtered = all
+          .filter(
+            (post) =>
+              String(post.Project || "").toLowerCase() === "hidya" &&
+              String(post.Status || "").toLowerCase() === "published",
+          )
+          .sort((a, b) => {
+            const aTime = new Date(String(a["Published Date"] || "")).getTime() || 0;
+            const bTime = new Date(String(b["Published Date"] || "")).getTime() || 0;
+            return bTime - aTime;
+          })
+          .slice(0, 3);
+
+        if (!cancelled) setPosts(filtered);
+      } catch {
+        if (!cancelled) setPosts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -835,7 +898,7 @@ function BlogSection() {
 
   if (loading) {
     return (
-      <section className="py-20 px-6">
+      <section id="blog" className="py-20 px-6">
         <div className="max-w-6xl mx-auto text-center">
           <Loader2 className="animate-spin mx-auto text-muted-foreground" size={20} />
         </div>
@@ -857,48 +920,54 @@ function BlogSection() {
             Eye care tips, clinical insights, and updates from Dr. Hidaya
           </p>
         </div>
+
         <div className="grid md:grid-cols-3 gap-8">
-          {posts.map((p) => (
+          {posts.map((p, i) => (
             <Link
-              key={String(p.Slug)}
+              key={String(p.Slug || p.Title || i)}
               to="/blog/$slug"
               params={{ slug: String(p.Slug) }}
               className="group block bg-card border border-border/50 rounded-2xl overflow-hidden shadow-soft hover:shadow-elegant transition-all"
               data-aos="fade-up"
+              data-aos-delay={i * 80}
             >
-              {p["Cover Image URL"] && (
+              {!!p["Cover Image URL"] && (
                 <div className="h-44 overflow-hidden">
                   <img
                     src={String(p["Cover Image URL"])}
                     alt=""
                     onError={(e) => {
-                      e.currentTarget.parentElement?.remove();
+                      e.currentTarget.style.display = "none";
                     }}
                     className="w-full h-full object-cover group-hover:scale-[1.03] transition"
                   />
                 </div>
               )}
+
               <div className="p-5 space-y-2">
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                  {p.Author && (
+                  {!!p.Author && (
                     <span className="flex items-center gap-1">
                       <User size={10} />
                       {String(p.Author)}
                     </span>
                   )}
-                  {p["Published Date"] && (
+                  {!!p["Published Date"] && (
                     <span className="flex items-center gap-1">
                       <Calendar size={10} />
                       {formatDate(String(p["Published Date"]))}
                     </span>
                   )}
                 </div>
+
                 <h3 className="font-semibold group-hover:text-primary transition">
                   {String(p.Title)}
                 </h3>
-                {p.Excerpt && (
+
+                {!!p.Excerpt && (
                   <p className="text-xs text-muted-foreground line-clamp-2">{String(p.Excerpt)}</p>
                 )}
+
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-primary group-hover:underline">
                   Read More <ArrowRight size={12} />
                 </span>
@@ -906,6 +975,7 @@ function BlogSection() {
             </Link>
           ))}
         </div>
+
         <div className="text-center mt-10" data-aos="fade-up">
           <Link
             to="/blog"
