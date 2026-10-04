@@ -1020,15 +1020,15 @@ function LegalNotice() {
             <h3 className="text-foreground font-medium mb-1.5">Your details</h3>
             <p>
               Details submitted through the appointment form are used only to arrange and confirm your
-              appointment, and are not stored on this device or used for marketing. To request a copy
-              or deletion of your details, email{" "}
-              <a
-                href="mailto:drhidaya87@gmail.com"
+              appointment, and are not stored on this device or used for marketing. See the{" "}
+              <Link
+                to="/privacy"
                 className="text-primary underline underline-offset-2 hover:text-foreground transition-colors"
               >
-                drhidaya87@gmail.com
-              </a>
-              .
+                Privacy Policy
+              </Link>{" "}
+              for how your data is handled, how to request a copy or deletion, and the terms governing
+              use of this site.
             </p>
           </div>
 
@@ -1061,7 +1061,18 @@ function Footer() {
             © {new Date().getFullYear()} · Dubai, UAE ·{" "}
             <a href="#notice" className="underline underline-offset-2 hover:text-foreground">
               Important information
-            </a>
+            </a>{" "}
+            ·{" "}
+            <Link
+              to="/privacy"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Privacy
+            </Link>{" "}
+            ·{" "}
+            <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">
+              Terms
+            </Link>
           </div>
         </div>
       </div>
