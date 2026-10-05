@@ -6,7 +6,7 @@ import hidayaAsset from "@/assets/hidaya-doctor.jpg";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { format } from "date-fns";
-import { apiGet, APPSCRIPT_URL, normalizeBlogPost, slugify } from "../lib/api";
+import { apiGet, apiPost, normalizeBlogPost } from "../lib/api";
 import {
   Eye,
   Microscope,
@@ -20,12 +20,12 @@ import {
   Mail,
   MapPin,
   Plus,
-  Star,
   ArrowRight,
   Sparkles,
   Calendar,
   User,
   Loader2,
+  ShieldAlert,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -35,10 +35,10 @@ export const Route = createFileRoute("/")({
 type BlogPost = Record<string, unknown>;
 
 const stats = [
-  { value: "3,256+", label: "Procedures Performed" },
+  { value: "3,256", label: "Procedures Logged" },
   { value: "2,073", label: "Glaucoma Laser Interventions" },
   { value: "870", label: "Cataract Surgeries" },
-  { value: "12+", label: "Years of Experience" },
+  { value: "12+", label: "Years of Clinical Practice" },
 ];
 
 const services = [
@@ -70,7 +70,7 @@ const services = [
   {
     icon: Stethoscope,
     title: "Consultation",
-    desc: "Personalized evaluation and treatment planning in a tertiary-care standard.",
+    desc: "Systematic evaluation, diagnostic testing and discussion of management options.",
   },
 ];
 
@@ -78,7 +78,7 @@ const experience = [
   {
     role: "Consultant Ophthalmologist",
     org: "Aravind Eye Hospital, Madurai",
-    period: "Oct 2025 – Present",
+    period: "Oct 2025 – Jun 2026",
   },
   {
     role: "Fellow — Glaucoma Department",
@@ -118,57 +118,34 @@ const education = [
   { degree: "MBBS", school: "Madurai Medical College", year: "2011" },
 ];
 
-const testimonials = [
-  {
-    name: "Aisha M.",
-    role: "Glaucoma Patient · Dubai",
-    rating: 5,
-    text: "Dr. Hidaya explained my condition with so much patience. The laser procedure was painless and my vision has been stable for over a year now. Truly grateful.",
-  },
-  {
-    name: "Rajesh K.",
-    role: "Cataract Surgery · Madurai",
-    rating: 5,
-    text: "I could read again the day after surgery. Her precision and the team's care were world-class. I recommend her to every family member.",
-  },
-  {
-    name: "Fatima A.",
-    role: "Routine Consultation",
-    rating: 5,
-    text: "Calm, thorough, and incredibly knowledgeable. She took the time to answer every question. A rare and trusted doctor.",
-  },
-  {
-    name: "Mohammed S.",
-    role: "Combined Trabeculectomy",
-    rating: 5,
-    text: "A life-changing surgery handled with absolute mastery. Follow-ups were detailed and reassuring. Forever thankful.",
-  },
-];
-
 const faqs = [
   {
     q: "What conditions does Dr. Hidaya treat?",
-    a: "Dr. Hidaya specializes in glaucoma (POAG, PACG, pseudoexfoliation), cataract, anterior-segment disorders, and provides comprehensive ophthalmology consultations.",
+    a: "Dr. Hidaya's clinical focus is glaucoma (including POAG, PACG and pseudoexfoliation), cataract, and other anterior segment conditions.",
   },
   {
-    q: "How do I book an appointment?",
-    a: "Use the booking form below to request your preferred date and time. Our team will contact you within 24 hours to confirm.",
+    q: "How do I request an appointment?",
+    a: "Use the enquiry form on this page to submit your preferred date and time. A member of the practice will contact you to confirm. The form is for appointment requests only and is not monitored for clinical advice.",
   },
   {
-    q: "Do you offer second-opinion consultations for glaucoma?",
-    a: "Yes. Bring your previous reports — OCT, visual fields, IOP readings, and medication list — and we'll do a thorough re-evaluation.",
+    q: "Do you provide second-opinion consultations for glaucoma?",
+    a: "Yes. Please bring your previous reports — OCT, visual fields, IOP readings and current medication list — so the assessment can be repeated from your records.",
   },
   {
-    q: "Which surgical procedures do you perform?",
-    a: "Phacoemulsification with PCIOL, manual SICS, trabeculectomy (standalone & combined), MIGS, glaucoma drainage devices, YAG laser iridotomy, and Nd:YAG capsulotomy.",
+    q: "Which surgical procedures are performed?",
+    a: "The procedures relevant to your condition are discussed at your consultation and, where surgery is indicated, are performed at a DHA-licensed healthcare facility. This may include phacoemulsification with PCIOL, manual SICS, trabeculectomy, MIGS, glaucoma drainage devices, YAG laser iridotomy and Nd:YAG capsulotomy.",
   },
   {
-    q: "Where is the clinic located?",
-    a: "Consultations are based in Dubai, UAE. Detailed clinic address is shared on appointment confirmation.",
+    q: "Where does the consultation take place?",
+    a: "Consultations take place in Dubai, UAE, at a DHA-licensed healthcare facility. This website is an information and appointment-request site and is not itself a healthcare facility. The clinic name, address and booking route are confirmed when your appointment is confirmed.",
   },
   {
     q: "Are post-operative follow-ups included?",
-    a: "Yes. A structured follow-up schedule is part of every surgical plan to ensure optimal healing and visual outcomes.",
+    a: "Yes. A structured follow-up schedule is part of every surgical plan. The schedule and any additional visits are discussed with you before discharge.",
+  },
+  {
+    q: "Can I get medical advice through this website?",
+    a: "No. This site does not provide medical advice, diagnosis or treatment, and no clinical decision should be based on information published here. If you have urgent symptoms, contact a DHA-licensed healthcare facility or the Dubai ambulance service on 998.",
   },
 ];
 
@@ -188,10 +165,10 @@ function Portfolio() {
       <Services />
       <Experience />
       <EducationSection />
-      <Testimonials />
       <FAQ />
       <BlogSection />
       <Booking />
+      <LegalNotice />
       <Footer />
     </div>
   );
@@ -210,7 +187,6 @@ function Nav() {
     ["About", "#about"],
     ["Services", "#services"],
     ["Experience", "#experience"],
-    ["Testimonials", "#testimonials"],
     ["Blog", "/blog"],
     ["FAQ", "#faq"],
     ["Book", "#book"],
@@ -273,24 +249,28 @@ function Hero() {
         <div data-aos="fade-right">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-xs font-medium tracking-wider uppercase mb-6">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            DHA Qualified · UAE Golden Visa
+            DHA Professional Registration · 81268607
           </span>
 
-          <h1 className="text-5xl md:text-7xl font-semibold leading-[1.05] mb-6">
+          <h1 className="text-5xl md:text-7xl font-semibold leading-[1.05] mb-4">
             Dr. Noorul <br />
             <span className="text-gradient">Hidaya</span>
           </h1>
 
-          <div className="text-xl md:text-2xl text-muted-foreground mb-8 h-16 font-display italic">
+          <p className="text-lg md:text-xl text-foreground font-display mb-4">
+            Specialist Ophthalmology
+          </p>
+
+          <div className="text-base md:text-lg text-muted-foreground mb-8 h-12 font-display italic">
             <TypeAnimation
               sequence={[
-                "Specialist Ophthalmologist",
+                "Glaucoma",
                 1800,
-                "Glaucoma Surgeon",
+                "Cataract",
                 1800,
-                "Anterior Segment Expert",
+                "Anterior Segment",
                 1800,
-                "Cataract Surgery Specialist",
+                "Ophthalmic Surgery",
                 1800,
               ]}
               wrapper="span"
@@ -301,9 +281,9 @@ function Hero() {
           </div>
 
           <p className="text-base md:text-lg text-muted-foreground/90 leading-relaxed max-w-xl mb-10">
-            12+ years of progressive clinical experience with advanced fellowship training at the
-            globally recognized Aravind Eye Care System. Restoring vision with precision, compassion
-            and master-level surgical craft.
+            More than 12 years of clinical practice in ophthalmology, including fellowship training
+            in Glaucoma at Aravind Eye Care System, Madurai. The focus of this practice is the
+            assessment and management of glaucoma, cataract and other anterior segment conditions.
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -331,7 +311,7 @@ function Hero() {
             />
             <img
               src={hidayaAsset}
-              alt="Dr. Noorul Hidaya, Specialist Ophthalmologist"
+              alt="Dr. Noorul Hidaya, Specialist Ophthalmology"
               className="relative w-[20rem] md:w-[26rem] aspect-square object-cover rounded-[40%_60%_60%_40%/50%_50%_50%_50%] shadow-elegant animate-float"
             />
             <div
@@ -344,7 +324,7 @@ function Hero() {
               className="absolute bottom-10 -right-6 bg-card/95 backdrop-blur px-4 py-2.5 rounded-2xl shadow-elegant text-sm font-medium animate-float flex items-center gap-2"
               style={{ animationDelay: "1.5s" }}
             >
-              <Eye className="w-4 h-4 text-primary" /> 3,256+ Procedures
+              <Eye className="w-4 h-4 text-primary" /> 3,256 Logged Procedures
             </div>
           </div>
         </div>
@@ -403,21 +383,25 @@ function About() {
             className="space-y-5 text-muted-foreground leading-relaxed text-[15px]"
           >
             <p>
-              I am a Specialist Ophthalmologist based in Dubai with over a decade of progressive
-              clinical experience and advanced fellowship training in Glaucoma and Anterior Segment
-              Surgery at the globally recognized{" "}
-              <span className="text-foreground font-medium">Aravind Eye Care System</span>.
+              I am a physician registered with the Dubai Health Authority under the title{" "}
+              <span className="text-foreground font-medium">Specialist Ophthalmology</span> (DHA
+              Unique ID 81268607), practising in Dubai, UAE.
             </p>
             <p>
-              My surgical portfolio spans 3,256 logged procedures — including 2,073 glaucoma laser
-              interventions, 870 cataract surgeries and 102 combined trabeculectomy procedures —
-              built in high-volume tertiary care settings where every decision is anchored in
-              evidence and outcomes.
+              My clinical focus is glaucoma, cataract and other anterior segment conditions.
+              Fellowship training in Glaucoma was completed at{" "}
+              <span className="text-foreground font-medium">Aravind Eye Care System</span>, Madurai,
+              where I also trained and worked in general ophthalmology.
             </p>
             <p>
-              I hold a{" "}
-              <span className="text-foreground font-medium">Gold Medal in MS Ophthalmology</span>,
-              peer-reviewed publications, DHA Prometric qualification and a UAE Golden Visa.
+              I hold an MS Ophthalmology with a{" "}
+              <span className="text-foreground font-medium">Gold Medal</span> from Madurai Medical
+              College, a Fellowship in General Ophthalmology, a Fellowship in Glaucoma, and
+              peer-reviewed publications.
+            </p>
+            <p>
+              My personal surgical logbook records 3,256 procedures, including 2,073 glaucoma laser
+              interventions, 870 cataract surgeries and 102 combined trabeculectomy procedures.
             </p>
           </div>
 
@@ -452,6 +436,11 @@ function Services() {
           <h2 className="text-4xl md:text-5xl font-semibold">
             Clinical <span className="text-gradient">expertise</span>
           </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto mt-4 text-sm leading-relaxed">
+            The clinical areas below describe Dr. Hidaya's practice. Treatment is planned
+            individually, and any procedure is performed at a DHA-licensed healthcare facility in
+            Dubai.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -561,37 +550,78 @@ function Booking() {
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-    const data = Object.fromEntries(new FormData(e.currentTarget));
+    const form = new FormData(event.currentTarget);
 
-    const list = JSON.parse(localStorage.getItem("appointments") || "[]");
-    list.push({ ...data, createdAt: new Date().toISOString() });
-    localStorage.setItem("appointments", JSON.stringify(list));
+    const payload = {
+      action: "create",
+      project: "hidaya",
 
-    try {
-      await fetch(APPSCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, project: "hidya", action: "create" }),
-      });
-    } catch {
-      //
+      name: String(form.get("name") || "").trim(),
+      phone: String(form.get("phone") || "").trim(),
+      email: String(form.get("email") || "").trim(),
+
+      date: String(form.get("date") || "").trim(),
+      time: String(form.get("time") || "").trim(),
+
+      service: String(form.get("service") || "").trim(),
+      message: String(form.get("message") || "").trim(),
+
+      // Critical fix: checkbox value "on" becomes boolean true.
+      consent: form.get("consent") === "on",
+
+      // Keep honeypot empty.
+      website: "",
+    };
+
+    console.log("[Hidaya booking] payload:", payload);
+
+    if (!payload.name) {
+      toast.error("Please enter your full name.");
+      return;
     }
 
-    await new Promise((r) => setTimeout(r, 700));
+    if (!payload.phone) {
+      toast.error("Please enter your phone number.");
+      return;
+    }
 
-    toast.success("Appointment requested!", {
-      description: "Dr. Hidaya's team will contact you to confirm.",
-    });
+    if (!payload.email) {
+      toast.error("Please enter your email address.");
+      return;
+    }
 
-    formRef.current?.reset();
-    setSubmitting(false);
+    if (!payload.consent) {
+      toast.error("Please provide consent before submitting.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await apiPost(payload);
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 700);
+      });
+
+      toast.success("Appointment requested!", {
+        description: "Dr. Hidaya's team will contact you to confirm your appointment.",
+      });
+
+      formRef.current?.reset();
+    } catch (error) {
+      console.error("[Hidaya booking] submission failed:", error);
+
+      toast.error("Could not send appointment request.", {
+        description: "Please try again or contact the clinic directly.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
-
   const today = new Date().toISOString().split("T")[0];
 
   return (
@@ -602,10 +632,20 @@ function Booking() {
           <h2 className="text-4xl md:text-5xl font-semibold mb-6 leading-tight">
             Schedule your <span className="text-gradient">consultation</span>
           </h2>
-          <p className="text-muted-foreground mb-8 leading-relaxed">
-            Reserve a personalized eye-care consultation. Our team will reach out shortly to confirm
-            your appointment time.
+          <p className="text-muted-foreground mb-6 leading-relaxed">
+            Request a consultation and a member of the practice will contact you to confirm the
+            date, time and location.
           </p>
+
+          <div className="flex gap-3 p-4 rounded-2xl border border-border/60 bg-accent/40 mb-8 text-xs leading-relaxed text-muted-foreground">
+            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+            <p>
+              This website is not a healthcare facility and this form does not provide medical
+              advice or an online consultation. It is for appointment requests only. If you have
+              urgent symptoms, contact a DHA-licensed healthcare facility or call the Dubai
+              ambulance service on <span className="text-foreground font-medium">998</span>.
+            </p>
+          </div>
 
           <div className="space-y-4 text-sm">
             <div className="flex items-center gap-4 p-4 rounded-2xl gradient-card border border-border/50 shadow-soft">
@@ -634,8 +674,16 @@ function Booking() {
               </div>
               <div>
                 <div className="font-medium">Location</div>
-                <div className="text-muted-foreground">Dubai, United Arab Emirates</div>
+                <div className="text-muted-foreground">Dubai, UAE — DHA-licensed facility</div>
               </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-4 rounded-2xl border border-border/60 text-xs leading-relaxed text-muted-foreground">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+              <p>
+                Clinical care is delivered at a DHA-licensed healthcare facility. The specific
+                clinic and its address are confirmed at the time your appointment is confirmed.
+              </p>
             </div>
           </div>
         </div>
@@ -710,6 +758,21 @@ function Booking() {
             />
           </div>
 
+          <div className="flex items-start gap-3 text-xs leading-relaxed text-muted-foreground">
+            <input
+              type="checkbox"
+              name="consent"
+              required
+              id="consent"
+              className="mt-0.5 w-4 h-4 rounded border-input accent-primary shrink-0"
+            />
+            <label htmlFor="consent" className="cursor-pointer">
+              I consent to the practice using these details to arrange and confirm my appointment.
+              Please do not include detailed medical information in the message field — this form
+              cannot provide medical advice, and it is not monitored for urgent requests.
+            </label>
+          </div>
+
           <button
             type="submit"
             disabled={submitting}
@@ -747,53 +810,6 @@ function Field({
         className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
       />
     </div>
-  );
-}
-
-function Testimonials() {
-  return (
-    <section id="testimonials" className="py-24 px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16" data-aos="fade-up">
-          <p className="text-xs uppercase tracking-[0.3em] text-primary mb-3">Testimonials</p>
-          <h2 className="text-4xl md:text-5xl font-semibold">
-            What patients <span className="text-gradient">say</span>
-          </h2>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {testimonials.map((t, i) => (
-            <div
-              key={t.name}
-              data-aos="fade-up"
-              data-aos-delay={i * 100}
-              className="gradient-card border border-border/50 rounded-3xl p-8 shadow-soft hover:shadow-elegant transition-all hover:-translate-y-1 relative"
-            >
-              <div className="absolute top-6 right-8 text-6xl font-display text-primary/15 leading-none">
-                "
-              </div>
-              <div className="flex gap-0.5 mb-4 text-gold">
-                {Array.from({ length: t.rating }).map((_, k) => (
-                  <Star key={k} className="w-4 h-4 fill-current" />
-                ))}
-              </div>
-              <p className="text-[15px] text-foreground/85 leading-relaxed mb-6 italic">
-                "{t.text}"
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full gradient-hero flex items-center justify-center text-primary-foreground font-medium shadow-soft">
-                  {t.name[0]}
-                </div>
-                <div>
-                  <div className="font-medium text-sm">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -863,13 +879,16 @@ function BlogSection() {
 
     (async () => {
       try {
-        const json = await apiGet("?action=getBlogs");
+        const json = await apiGet<{
+          success?: boolean;
+          blogs?: Record<string, unknown>[];
+        }>("?action=getBlogs");
         const all = Array.isArray(json.blogs) ? json.blogs.map(normalizeBlogPost) : [];
 
         const filtered = all
           .filter(
             (post) =>
-              String(post.Project || "").toLowerCase() === "hidya" &&
+              String(post.Project || "").toLowerCase() === "hidaya" &&
               String(post.Status || "").toLowerCase() === "published",
           )
           .sort((a, b) => {
@@ -997,14 +1016,110 @@ function formatDate(val: string) {
   }
 }
 
+function LegalNotice() {
+  return (
+    <section id="notice" className="py-16 px-6">
+      <div className="max-w-4xl mx-auto" data-aos="fade-up">
+        <h2 className="text-xs uppercase tracking-[0.3em] text-primary mb-8">
+          Important information
+        </h2>
+
+        <div className="space-y-6 text-sm text-muted-foreground leading-relaxed">
+          <div>
+            <h3 className="text-foreground font-medium mb-1.5">Not a healthcare facility</h3>
+            <p>
+              This website is published by Dr. Noorul Hidaya for general information and appointment
+              requests. It is not a healthcare facility, and it does not provide teleconsultation,
+              diagnosis, treatment or medical advice. Clinical care is provided at a DHA-licensed
+              healthcare facility in Dubai, UAE.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-foreground font-medium mb-1.5">Professional registration</h3>
+            <p>
+              Dr. Noorul Hidaya is registered with the Dubai Health Authority as a Physician under
+              the title <span className="text-foreground">Specialist Ophthalmology</span>, DHA
+              Unique ID 81268607. A professional registration is not in itself a permit to practise;
+              clinical practice takes place at a DHA-licensed healthcare facility. Information
+              published here should not be relied on to verify an individual's registration status —
+              please verify directly with the Dubai Health Authority.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-foreground font-medium mb-1.5">No guarantees of outcome</h3>
+            <p>
+              Information on this site is general and does not constitute a promise, guarantee or
+              indication of any particular result, recovery time or visual outcome. Every patient's
+              condition and management differs, and decisions about your care are made only after a
+              consultation at the facility.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-foreground font-medium mb-1.5">Urgent care</h3>
+            <p>
+              This site is not monitored for urgent or emergency requests. If you have urgent
+              symptoms, contact a DHA-licensed healthcare facility or call the Dubai ambulance
+              service on <span className="text-foreground">998</span>.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-foreground font-medium mb-1.5">Your details</h3>
+            <p>
+              Details submitted through the appointment form are used only to arrange and confirm
+              your appointment, and are not stored on this device or used for marketing. See the{" "}
+              <Link
+                to="/privacy"
+                className="text-primary underline underline-offset-2 hover:text-foreground transition-colors"
+              >
+                Privacy Policy
+              </Link>{" "}
+              for how your data is handled, how to request a copy or deletion, and the terms
+              governing use of this site.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-foreground font-medium mb-1.5">Third-party references</h3>
+            <p>
+              Aravind Eye Care System, Vasan Eye Care Hospital, Dr J A Batcha Polyclinic and Madurai
+              Medical College are named as prior places of training and work only. Their branding
+              and names are not used to imply endorsement or affiliation with this website.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Footer() {
   return (
-    <footer className="border-t border-border/50 py-10 px-6 mt-10">
+    <footer className="border-t border-border/50 py-10 px-6">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
         <div className="font-display text-lg text-foreground">
           Dr. Noorul Hidaya<span className="text-gradient">.</span>
         </div>
-        <div>© {new Date().getFullYear()} All rights reserved · Dubai, UAE</div>
+        <div className="text-center md:text-right">
+          <div>Specialist Ophthalmology · DHA Unique ID 81268607</div>
+          <div className="text-xs mt-1">
+            © {new Date().getFullYear()} · Dubai, UAE ·{" "}
+            <a href="#notice" className="underline underline-offset-2 hover:text-foreground">
+              Important information
+            </a>{" "}
+            ·{" "}
+            <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground">
+              Privacy
+            </Link>{" "}
+            ·{" "}
+            <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">
+              Terms
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   );
