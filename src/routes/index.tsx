@@ -6,7 +6,7 @@ import hidayaAsset from "@/assets/hidaya-doctor.jpg";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { format } from "date-fns";
-import { apiGet, APPSCRIPT_URL, normalizeBlogPost } from "../lib/api";
+import { apiGet, apiPost, normalizeBlogPost } from "../lib/api";
 import {
   Eye,
   Microscope,
@@ -281,9 +281,9 @@ function Hero() {
           </div>
 
           <p className="text-base md:text-lg text-muted-foreground/90 leading-relaxed max-w-xl mb-10">
-            More than 12 years of clinical practice in ophthalmology, including fellowship training in
-            Glaucoma at Aravind Eye Care System, Madurai. The focus of this practice is the assessment
-            and management of glaucoma, cataract and other anterior segment conditions.
+            More than 12 years of clinical practice in ophthalmology, including fellowship training
+            in Glaucoma at Aravind Eye Care System, Madurai. The focus of this practice is the
+            assessment and management of glaucoma, cataract and other anterior segment conditions.
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -550,33 +550,78 @@ function Booking() {
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-    const data = Object.fromEntries(new FormData(e.currentTarget));
+    const form = new FormData(event.currentTarget);
 
-    try {
-      await fetch(APPSCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, project: "hidaya", action: "create" }),
-      });
-    } catch {
-      //
+    const payload = {
+      action: "create",
+      project: "hidaya",
+
+      name: String(form.get("name") || "").trim(),
+      phone: String(form.get("phone") || "").trim(),
+      email: String(form.get("email") || "").trim(),
+
+      date: String(form.get("date") || "").trim(),
+      time: String(form.get("time") || "").trim(),
+
+      service: String(form.get("service") || "").trim(),
+      message: String(form.get("message") || "").trim(),
+
+      // Critical fix: checkbox value "on" becomes boolean true.
+      consent: form.get("consent") === "on",
+
+      // Keep honeypot empty.
+      website: "",
+    };
+
+    console.log("[Hidaya booking] payload:", payload);
+
+    if (!payload.name) {
+      toast.error("Please enter your full name.");
+      return;
     }
 
-    await new Promise((r) => setTimeout(r, 700));
+    if (!payload.phone) {
+      toast.error("Please enter your phone number.");
+      return;
+    }
 
-    toast.success("Appointment requested!", {
-      description: "Dr. Hidaya's team will contact you to confirm.",
-    });
+    if (!payload.email) {
+      toast.error("Please enter your email address.");
+      return;
+    }
 
-    formRef.current?.reset();
-    setSubmitting(false);
+    if (!payload.consent) {
+      toast.error("Please provide consent before submitting.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await apiPost(payload);
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 700);
+      });
+
+      toast.success("Appointment requested!", {
+        description: "Dr. Hidaya's team will contact you to confirm your appointment.",
+      });
+
+      formRef.current?.reset();
+    } catch (error) {
+      console.error("[Hidaya booking] submission failed:", error);
+
+      toast.error("Could not send appointment request.", {
+        description: "Please try again or contact the clinic directly.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
-
   const today = new Date().toISOString().split("T")[0];
 
   return (
@@ -588,17 +633,17 @@ function Booking() {
             Schedule your <span className="text-gradient">consultation</span>
           </h2>
           <p className="text-muted-foreground mb-6 leading-relaxed">
-            Request a consultation and a member of the practice will contact you to confirm the date,
-            time and location.
+            Request a consultation and a member of the practice will contact you to confirm the
+            date, time and location.
           </p>
 
           <div className="flex gap-3 p-4 rounded-2xl border border-border/60 bg-accent/40 mb-8 text-xs leading-relaxed text-muted-foreground">
             <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
             <p>
-              This website is not a healthcare facility and this form does not provide medical advice
-              or an online consultation. It is for appointment requests only. If you have urgent
-              symptoms, contact a DHA-licensed healthcare facility or call the Dubai ambulance
-              service on <span className="text-foreground font-medium">998</span>.
+              This website is not a healthcare facility and this form does not provide medical
+              advice or an online consultation. It is for appointment requests only. If you have
+              urgent symptoms, contact a DHA-licensed healthcare facility or call the Dubai
+              ambulance service on <span className="text-foreground font-medium">998</span>.
             </p>
           </div>
 
@@ -636,8 +681,8 @@ function Booking() {
             <div className="flex items-start gap-3 p-4 rounded-2xl border border-border/60 text-xs leading-relaxed text-muted-foreground">
               <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
               <p>
-                Clinical care is delivered at a DHA-licensed healthcare facility. The specific clinic
-                and its address are confirmed at the time your appointment is confirmed.
+                Clinical care is delivered at a DHA-licensed healthcare facility. The specific
+                clinic and its address are confirmed at the time your appointment is confirmed.
               </p>
             </div>
           </div>
@@ -834,13 +879,16 @@ function BlogSection() {
 
     (async () => {
       try {
-        const json = await apiGet("?action=getBlogs");
+        const json = await apiGet<{
+          success?: boolean;
+          blogs?: Record<string, unknown>[];
+        }>("?action=getBlogs");
         const all = Array.isArray(json.blogs) ? json.blogs.map(normalizeBlogPost) : [];
 
         const filtered = all
           .filter(
             (post) =>
-              String(post.Project || "").toLowerCase() === "hidya" &&
+              String(post.Project || "").toLowerCase() === "hidaya" &&
               String(post.Status || "").toLowerCase() === "published",
           )
           .sort((a, b) => {
@@ -972,7 +1020,9 @@ function LegalNotice() {
   return (
     <section id="notice" className="py-16 px-6">
       <div className="max-w-4xl mx-auto" data-aos="fade-up">
-        <h2 className="text-xs uppercase tracking-[0.3em] text-primary mb-8">Important information</h2>
+        <h2 className="text-xs uppercase tracking-[0.3em] text-primary mb-8">
+          Important information
+        </h2>
 
         <div className="space-y-6 text-sm text-muted-foreground leading-relaxed">
           <div>
@@ -988,12 +1038,12 @@ function LegalNotice() {
           <div>
             <h3 className="text-foreground font-medium mb-1.5">Professional registration</h3>
             <p>
-              Dr. Noorul Hidaya is registered with the Dubai Health Authority as a Physician under the
-              title <span className="text-foreground">Specialist Ophthalmology</span>, DHA Unique ID
-              81268607. A professional registration is not in itself a permit to practise; clinical
-              practice takes place at a DHA-licensed healthcare facility. Information published here
-              should not be relied on to verify an individual's registration status — please verify
-              directly with the Dubai Health Authority.
+              Dr. Noorul Hidaya is registered with the Dubai Health Authority as a Physician under
+              the title <span className="text-foreground">Specialist Ophthalmology</span>, DHA
+              Unique ID 81268607. A professional registration is not in itself a permit to practise;
+              clinical practice takes place at a DHA-licensed healthcare facility. Information
+              published here should not be relied on to verify an individual's registration status —
+              please verify directly with the Dubai Health Authority.
             </p>
           </div>
 
@@ -1019,16 +1069,16 @@ function LegalNotice() {
           <div>
             <h3 className="text-foreground font-medium mb-1.5">Your details</h3>
             <p>
-              Details submitted through the appointment form are used only to arrange and confirm your
-              appointment, and are not stored on this device or used for marketing. See the{" "}
+              Details submitted through the appointment form are used only to arrange and confirm
+              your appointment, and are not stored on this device or used for marketing. See the{" "}
               <Link
                 to="/privacy"
                 className="text-primary underline underline-offset-2 hover:text-foreground transition-colors"
               >
                 Privacy Policy
               </Link>{" "}
-              for how your data is handled, how to request a copy or deletion, and the terms governing
-              use of this site.
+              for how your data is handled, how to request a copy or deletion, and the terms
+              governing use of this site.
             </p>
           </div>
 
@@ -1036,8 +1086,8 @@ function LegalNotice() {
             <h3 className="text-foreground font-medium mb-1.5">Third-party references</h3>
             <p>
               Aravind Eye Care System, Vasan Eye Care Hospital, Dr J A Batcha Polyclinic and Madurai
-              Medical College are named as prior places of training and work only. Their branding and
-              names are not used to imply endorsement or affiliation with this website.
+              Medical College are named as prior places of training and work only. Their branding
+              and names are not used to imply endorsement or affiliation with this website.
             </p>
           </div>
         </div>
@@ -1054,19 +1104,14 @@ function Footer() {
           Dr. Noorul Hidaya<span className="text-gradient">.</span>
         </div>
         <div className="text-center md:text-right">
-          <div>
-            Specialist Ophthalmology · DHA Unique ID 81268607
-          </div>
+          <div>Specialist Ophthalmology · DHA Unique ID 81268607</div>
           <div className="text-xs mt-1">
             © {new Date().getFullYear()} · Dubai, UAE ·{" "}
             <a href="#notice" className="underline underline-offset-2 hover:text-foreground">
               Important information
             </a>{" "}
             ·{" "}
-            <Link
-              to="/privacy"
-              className="underline underline-offset-2 hover:text-foreground"
-            >
+            <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground">
               Privacy
             </Link>{" "}
             ·{" "}
